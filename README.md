@@ -152,6 +152,7 @@ engine.update(dt, input)      // apply movement/turn/dolly from an input object
 engine.renderScene(buf32)     // raycast into a Uint32 pixel buffer
 engine.facingDegrees()        // compass heading, 0° = north
 engine.RW, engine.RH          // current render dimensions (read-only)
+engine.castRay(ox,oy,dx,dy,max) // hitscan → { hit, dist, x, y, mapX, mapY, side, tile }
 engine.zbuf                   // per-column depth (read-only; for sprites)
 ```
 
@@ -211,7 +212,7 @@ Those require a BSP or portal renderer — a substantially different (and larger
 ### Roadmap ideas
 
 - **Sprite renderer** using the exposed `zbuf` (enemies, pickups).
-- **Hitscan** — a `castRay()` in the engine so the shotgun actually hits walls/entities.
+- ~~**Hitscan** — a `castRay()` in the engine so the shotgun actually hits walls/entities.~~ ✓ done — `engine.castRay()`; the shotgun fires a 7-pellet spread that leaves distance-scaled sparks on the wall. Entity hits slot into the same function.
 - **Enemies** with simple AI down the corridors.
 - ~~**PWA shell** — a manifest + service worker to make it installable and offline-capable.~~ ✓ done — see [Progressive Web App](#progressive-web-app).
 - **Floor/ceiling texture-casting** for a more DOOM-authentic look (per-pixel; costs perf).

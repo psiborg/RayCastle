@@ -61,7 +61,7 @@
     keys[e.code] = true;
     if (e.code === "Escape") releasePointer();
     if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Space"].includes(e.code)) e.preventDefault();
-    if (e.code === "Space" && !e.repeat && running) shotgun.fire();
+    if (e.code === "Space" && !e.repeat) triggerShot();
   });
   window.addEventListener("keyup", e => { keys[e.code] = false; });
 
@@ -125,7 +125,7 @@
 
     const fireBtn = document.getElementById("fireBtn");
     if (fireBtn) {
-      fireBtn.addEventListener("pointerdown", () => { if (running) shotgun.fire(); });
+      fireBtn.addEventListener("pointerdown", () => triggerShot());
     }
 
     // Handedness toggle: flip the D-pad and fire button sides.
@@ -190,11 +190,61 @@
     g_dir.textContent = Math.round(engine.facingDegrees()) + "\u00B0";
   }
 
+  // --- Shotgun hitscan + impact sparks ---------------------------------------
+  // On fire we trace a spread of pellets with engine.castRay(). Because each
+  // pellet's ray is dir + plane*dcam, it lands on the wall column at screen
+  // fraction (dcam+1)/2 — so the spark sits exactly where that pellet hit, and
+  // its size scales with the hit distance (near = big, far = small).
+  const impacts = [];   // active bursts: { pellets:[{fx,fy,dist}], life }
+
+  function applyHitscan() {
+    const p = engine.player;
+    const pellets = [];
+    for (let i = 0; i < 7; i++) {
+      const dcam = (Math.random() * 2 - 1) * 0.07;       // horizontal spread
+      let rx = p.dirX + p.planeX * dcam;
+      let ry = p.dirY + p.planeY * dcam;
+      const len = Math.hypot(rx, ry); rx /= len; ry /= len;
+      const shot = engine.castRay(p.posX, p.posY, rx, ry, 40);
+      if (shot.hit) {
+        pellets.push({
+          fx: (dcam + 1) / 2,                            // screen x fraction
+          fy: 0.5 + (Math.random() - 0.5) * 0.05,        // near horizon, slight scatter
+          dist: shot.dist,
+        });
+      }
+    }
+    if (pellets.length) impacts.push({ pellets, life: 1 });
+  }
+
+  // Called from the fire controls; only traces when a shot actually discharges.
+  function triggerShot() {
+    if (!running) return;
+    if (shotgun.fire()) applyHitscan();
+  }
+
+  function drawImpacts() {
+    for (const imp of impacts) {
+      for (const pel of imp.pellets) {
+        const x = pel.fx * engine.RW;
+        const y = pel.fy * engine.RH;
+        const r = Math.max(1.5, (engine.RH / pel.dist) * 0.06) * (0.6 + imp.life);
+        const g = sctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0.0, "rgba(255,250,230," + imp.life + ")");
+        g.addColorStop(0.5, "rgba(255,180,70," + (imp.life * 0.7) + ")");
+        g.addColorStop(1.0, "rgba(255,120,40,0)");
+        sctx.fillStyle = g;
+        sctx.beginPath(); sctx.arc(x, y, r, 0, Math.PI * 2); sctx.fill();
+      }
+    }
+  }
+
   // --- Frame blit ------------------------------------------------------------
   function draw() {
     engine.renderScene(buf32);
     sctx.putImageData(frame, 0, 0);
-    shotgun.render(sctx, engine.RW, engine.RH);
+    drawImpacts();                                 // sparks on the walls
+    shotgun.render(sctx, engine.RW, engine.RH);    // gun in the foreground
     renderMinimap();
   }
 
@@ -213,6 +263,10 @@
     const moving = input.forward || input.back || input.strafeLeft ||
                    input.strafeRight || Math.abs(input.dolly) > 1e-4;
     shotgun.update(dt, moving);
+    for (let i = impacts.length - 1; i >= 0; i--) {
+      impacts[i].life -= dt * 7;                   // ~0.14s spark
+      if (impacts[i].life <= 0) impacts.splice(i, 1);
+    }
     draw();
     updateHUD(dt);
 

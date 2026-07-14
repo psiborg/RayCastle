@@ -342,12 +342,44 @@ const RC = (function () {
       return ((deg % 360) + 360) % 360;
     }
 
+    // Hitscan: cast a single ray from (ox,oy) along the UNIT direction (dx,dy)
+    // and return the first wall hit — the primitive behind hitscan weapons.
+    // Uses the same DDA as the renderer; distance is true/Euclidean because the
+    // direction is unit length. Returns { hit:false } if nothing is struck
+    // within maxDist. (Entity checks slot in here later: also cast against the
+    // entity list and return whichever hit is nearer.)
+    function castRay(ox, oy, dx, dy, maxDist) {
+      const limit = maxDist || 64;
+      let mapX = ox | 0, mapY = oy | 0;
+      const deltaDistX = dx === 0 ? 1e30 : Math.abs(1 / dx);
+      const deltaDistY = dy === 0 ? 1e30 : Math.abs(1 / dy);
+      let stepX, stepY, sideDistX, sideDistY, side = 0;
+
+      if (dx < 0) { stepX = -1; sideDistX = (ox - mapX) * deltaDistX; }
+      else        { stepX =  1; sideDistX = (mapX + 1 - ox) * deltaDistX; }
+      if (dy < 0) { stepY = -1; sideDistY = (oy - mapY) * deltaDistY; }
+      else        { stepY =  1; sideDistY = (mapY + 1 - oy) * deltaDistY; }
+
+      for (;;) {
+        if (sideDistX < sideDistY) { sideDistX += deltaDistX; mapX += stepX; side = 0; }
+        else                       { sideDistY += deltaDistY; mapY += stepY; side = 1; }
+        if (mapX < 0 || mapY < 0 || mapX >= MAP_W || mapY >= MAP_H) return { hit: false };
+        const dist = side === 0 ? sideDistX - deltaDistX : sideDistY - deltaDistY;
+        if (dist > limit) return { hit: false };
+        const tile = MAP[mapY][mapX];
+        if (tile > 0) {
+          return { hit: true, dist, x: ox + dx * dist, y: oy + dy * dist, mapX, mapY, side, tile };
+        }
+      }
+    }
+
     return {
       player,
       setResolution,
       update,
       renderScene,
       facingDegrees,
+      castRay,
       get RW() { return RW; },
       get RH() { return RH; },
       get zbuf() { return zbuf; },   // exposed for future sprite rendering
