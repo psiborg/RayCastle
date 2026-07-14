@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>RayCastle // Doomenstein</title>
+<link rel="stylesheet" href="./app.css">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0a0806">
+<link rel="icon" href="./icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16x16.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="RayCastle">
+</head>
+<body>
+<div id="rig">
+  <div id="screen-wrap">
+    <canvas id="screen"></canvas>
+    <canvas id="minimap" width="140" height="140"></canvas>
+
+    <div id="overlay">
+      <h1>RAY<span>CASTLE</span></h1>
+      <div class="sub">DOOMENSTEIN · GRID ENGINE</div>
+      <div class="keys">
+        <span><b>W A S D</b></span><span>move &amp; strafe</span>
+        <span><b>&larr; &rarr; / MOUSE</b></span><span>turn / look</span>
+        <span><b>WHEEL</b></span><span>move fwd / back</span>
+        <span><b>SPACE</b></span><span>fire shotgun</span>
+        <span><b>SHIFT</b></span><span>run</span>
+        <span><b>ESC</b></span><span>pause</span>
+      </div>
+      <div class="touch-hint">D-pad moves &amp; turns · FIRE shoots</div>
+      <button id="startBtn">ENTER THE MAZE</button>
+      <small>click grabs the mouse for looking — esc releases it</small>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="gauge">
+      <div class="lbl">Level</div>
+      <div class="val small">E1M1&#8203;-CLONE</div>
+    </div>
+    <div class="gauge">
+      <div class="lbl">FPS</div>
+      <div class="val" id="g-fps">--</div>
+    </div>
+    <div class="gauge hide-sm">
+      <div class="lbl">Pos X</div>
+      <div class="val small" id="g-x">0.0</div>
+    </div>
+    <div class="gauge hide-sm">
+      <div class="lbl">Pos Y</div>
+      <div class="val small" id="g-y">0.0</div>
+    </div>
+    <div class="gauge hide-sm">
+      <div class="lbl">Facing</div>
+      <div class="val small" id="g-dir">0&deg;</div>
+    </div>
+    <div class="gauge wide" style="align-items:flex-end;">
+      <div class="lbl">Status</div>
+      <div class="val blood" id="g-status">STANDBY</div>
+    </div>
+  </div>
+
+  <div id="touch" aria-label="Touch controls">
+    <div class="dpad">
+      <button class="tbtn up"    data-key="ArrowUp"    aria-label="Move forward">&#9650;</button>
+      <button class="tbtn left"  data-key="ArrowLeft"  aria-label="Turn left">&#9664;</button>
+      <button class="tbtn down"  data-key="ArrowDown"  aria-label="Move back">&#9660;</button>
+      <button class="tbtn right" data-key="ArrowRight" aria-label="Turn right">&#9654;</button>
+    </div>
+    <button id="swapBtn" class="swap" aria-label="Swap control sides (left/right handed)">&#8646;</button>
+    <button id="fireBtn" class="fire" aria-label="Fire">FIRE</button>
+  </div>
+</div>
+
+<!-- engine first (defines the global RC), then the weapon, then the DOM host -->
+<script src="./engine.js"></script>
+<script src="./weapon.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

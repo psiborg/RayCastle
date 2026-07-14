@@ -1,0 +1,213 @@
+/* =============================================================================
+ *  app.css — all styling for RayCastle: layout, the rendered view, minimap,
+ *  status-bar HUD, start/pause overlay, and the mobile touch controls.
+ *  Pure presentation; no behaviour lives here.
+ * ===========================================================================*/
+
+:root {
+  --void:   #0a0806;   /* near-black brown, the background of the whole rig   */
+  --steel:  #4a4038;   /* grimy panel steel                                   */
+  --steel2: #2c2621;   /* darker recess                                       */
+  --amber:  #ffb300;   /* HUD readout glow                                    */
+  --amberd: #7a5600;   /* dim amber                                           */
+  --blood:  #a01e1e;   /* danger / accent                                     */
+  --tech:   #6f8f5f;   /* techbase green                                      */
+  --bone:   #d8cbb0;   /* light text                                          */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--void);
+  color: var(--bone);
+  font-family: "Courier New", ui-monospace, monospace;
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#rig {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* ---- The rendered 3D view (hero) --------------------------------------- */
+#screen-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #000;
+  overflow: hidden;
+}
+#screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;       /* the chunky DOOM upscale */
+  image-rendering: crisp-edges;
+  display: block;
+}
+
+/* ---- Minimap, pinned top-right of the view ---------------------------- */
+#minimap {
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 140px; height: 140px;
+  border: 2px solid var(--steel);
+  background: rgba(10,8,6,0.72);
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 1px #000, inset 0 0 12px rgba(0,0,0,0.6);
+}
+
+/* ---- Start / pause overlay -------------------------------------------- */
+#overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 18px;
+  background: radial-gradient(ellipse at center, rgba(20,14,10,0.72), rgba(4,3,2,0.94));
+  text-align: center;
+  z-index: 5;
+  padding: 24px;
+}
+#overlay h1 {
+  font-size: clamp(26px, 6vw, 52px);
+  letter-spacing: 0.14em;
+  font-weight: 900;
+  color: var(--blood);
+  text-shadow: 0 0 14px rgba(160,30,30,0.5), 2px 2px 0 #000;
+}
+#overlay h1 span { color: var(--amber); text-shadow: 0 0 14px rgba(255,179,0,0.4), 2px 2px 0 #000; }
+#overlay .sub { color: var(--tech); letter-spacing: 0.22em; font-size: 12px; }
+#overlay .keys {
+  display: grid; grid-template-columns: auto auto; gap: 4px 14px;
+  font-size: 13px; color: var(--bone);
+  background: var(--steel2);
+  border: 1px solid var(--steel);
+  padding: 14px 20px;
+}
+#overlay .keys b { color: var(--amber); font-weight: 700; }
+#overlay button {
+  font: inherit; font-weight: 900; letter-spacing: 0.18em;
+  color: var(--void); background: var(--amber);
+  border: none; padding: 14px 34px; cursor: pointer;
+  border-top: 2px solid #ffd24d; border-bottom: 3px solid #8a5f00;
+}
+#overlay button:hover { background: #ffc233; }
+#overlay button:focus-visible { outline: 3px solid var(--tech); outline-offset: 3px; }
+#overlay small { color: var(--amberd); font-size: 11px; letter-spacing: 0.1em; }
+
+/* ---- The status bar: beveled steel, amber segmented readouts ---------- */
+#statusbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  background: linear-gradient(#5a4e43, var(--steel) 40%, var(--steel2));
+  border-top: 2px solid #6b5d4f;
+  padding: 6px;
+  height: 72px;
+}
+.gauge {
+  background: #050403;
+  border: 1px solid #000;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+  padding: 6px 12px;
+  display: flex; flex-direction: column; justify-content: center;
+  min-width: 0;
+}
+.gauge .lbl {
+  font-size: 9px; letter-spacing: 0.2em; color: var(--tech);
+  text-transform: uppercase; margin-bottom: 2px;
+}
+.gauge .val {
+  font-size: 22px; font-weight: 900; color: var(--amber);
+  text-shadow: 0 0 8px rgba(255,179,0,0.55);
+  line-height: 1; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.gauge.wide { flex: 1 1 auto; }
+.gauge .val.small { font-size: 15px; color: var(--bone); text-shadow: none; }
+.gauge .val.blood { color: var(--blood); text-shadow: 0 0 8px rgba(160,30,30,0.6); }
+
+@media (max-width: 560px) {
+  .gauge.hide-sm { display: none; }
+  #minimap { width: 104px; height: 104px; }
+}
+/* ---- Mobile touch controls (hidden on desktop) ------------------------ */
+#touch { display: none; }
+.touch-hint { display: none; }
+
+@media (hover: none) and (pointer: coarse) {
+  #touch {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 22px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(#4a4038, var(--steel2));
+    border-top: 2px solid #6b5d4f;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+  }
+  /* inverted-T: up on top, left/down/right on the bottom row */
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(2, 52px);
+    gap: 8px;
+  }
+  .dpad .up    { grid-column: 2; grid-row: 1; }
+  .dpad .left  { grid-column: 1; grid-row: 2; }
+  .dpad .down  { grid-column: 2; grid-row: 2; }
+  .dpad .right { grid-column: 3; grid-row: 2; }
+  .tbtn {
+    font: inherit; font-size: 22px; line-height: 1;
+    color: var(--amber);
+    background: #050403;
+    border: 1px solid #000; border-top: 2px solid #6b5d4f;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent; touch-action: none;
+  }
+  .tbtn:active { background: #1a140a; color: #ffd24d; }
+  .fire {
+    width: 96px; height: 96px; border-radius: 50%;
+    font: inherit; font-weight: 900; font-size: 16px; letter-spacing: 0.08em;
+    color: #ffe3d0;
+    background: radial-gradient(circle at 50% 38%, #d23a2a, #7a1414);
+    border: none; border-top: 3px solid #ff6a4a; border-bottom: 4px solid #4a0c0c;
+    text-shadow: 0 1px 2px #000;
+    -webkit-tap-highlight-color: transparent; touch-action: none;
+  }
+  .fire:active { background: radial-gradient(circle at 50% 38%, #ff5a44, #8a1a1a); }
+
+  /* small swap button — trades the D-pad and fire sides for handedness */
+  .swap {
+    width: 42px; height: 42px; align-self: center;
+    font: inherit; font-size: 18px; color: var(--amber);
+    background: #050403;
+    border: 1px solid #000; border-top: 2px solid #6b5d4f;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  }
+  .swap:active { background: #1a140a; color: #ffd24d; }
+  /* left-handed: D-pad on the right, fire on the left (swap stays centred) */
+  #touch.flipped { flex-direction: row-reverse; }
+
+  /* swap the desktop key legend for a short touch hint */
+  #overlay .keys, #overlay small { display: none; }
+  #overlay .touch-hint {
+    display: block; color: var(--tech);
+    font-size: 12px; letter-spacing: 0.12em;
+  }
+}
