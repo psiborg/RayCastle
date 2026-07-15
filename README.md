@@ -132,7 +132,18 @@ For each screen column, one ray is marched through the grid with the **DDA algor
 - Walls are **texture-mapped** by reading each 64×64 procedural texture into a flat `Uint32Array` once, then sampling a column per ray and writing straight into a packed `Uint32` view of the frame — far faster than per-pixel `fillRect`.
 - The scene renders into a small internal buffer (fixed **300px tall**, width follows the aspect ratio) and is CSS-upscaled with `image-rendering: pixelated`. This both boosts performance and gives the authentic chunky look.
 - Distance **fog** and a slight darkening of east/west walls keep depth and corners readable.
-- `zbuf[]` (per-column wall depth) is populated every frame and exposed on the engine — it's the hook for future **sprite rendering** (draw a sprite column only where its depth beats the wall depth).
+- `zbuf[]` (per-column wall depth) is populated by the wall pass every frame and then consumed by the sprite pass — see below.
+
+### Sprites & enemies
+
+After the walls are drawn, `renderSprites()` draws each entity as a **billboard** — a screen-aligned quad that always faces the camera. The technique:
+
+1. Transform the entity's world position into camera space by multiplying by the inverse of the camera matrix `[planeX dirX; planeY dirY]`. The resulting `transformY` is depth into the screen; `transformX` gives the horizontal offset.
+2. Screen height is `RH / transformY` — the same inverse-distance rule the walls use, so sprites and walls share one consistent perspective.
+3. **Depth test per column:** skip any column where `transformY >= zbuf[x]`, i.e. a wall is nearer. This is what makes an imp correctly disappear behind a corner.
+4. Sprites are sorted **far → near** (painter's order) so overlapping enemies stack correctly, and each texel's alpha is tested so the transparent surround doesn't blot out the scene.
+
+Enemies are procedurally-drawn imps with four frames (alive / hit / falling / corpse) and a small state machine: `idle → chase` once the player is within 12 cells **and** has line of sight (a walls-only `castRay`), `hit` on a flinch, then `dying → dead`, after which the corpse lies flat on the floor and can't be shot again. The shotgun's 7 pellets each call `castRay(..., hitEntities=true)`, which returns whichever is nearer — wall or imp — so pellets land as sparks on stone and blood on flesh. Three hits kill.
 
 ### Engine API (`RC`)
 
@@ -152,7 +163,9 @@ engine.update(dt, input)      // apply movement/turn/dolly from an input object
 engine.renderScene(buf32)     // raycast into a Uint32 pixel buffer
 engine.facingDegrees()        // compass heading, 0° = north
 engine.RW, engine.RH          // current render dimensions (read-only)
-engine.castRay(ox,oy,dx,dy,max) // hitscan → { hit, dist, x, y, mapX, mapY, side, tile }
+engine.castRay(ox,oy,dx,dy,max,hitEntities) // hitscan → { hit, dist, x, y, mapX, mapY, side, tile } or { …, entity }
+engine.entities               // live entity list: { x, y, hp, state, t }
+engine.damage(entity, amount) // apply damage → true if this killed it
 engine.zbuf                   // per-column depth (read-only; for sprites)
 ```
 
@@ -211,9 +224,9 @@ Those require a BSP or portal renderer — a substantially different (and larger
 
 ### Roadmap ideas
 
-- **Sprite renderer** using the exposed `zbuf` (enemies, pickups).
+- ~~**Sprite renderer** using the exposed `zbuf` (enemies, pickups).~~ ✓ done — depth-tested billboards; see [Sprites & enemies](#sprites--enemies).
 - ~~**Hitscan** — a `castRay()` in the engine so the shotgun actually hits walls/entities.~~ ✓ done — `engine.castRay()`; the shotgun fires a 7-pellet spread that leaves distance-scaled sparks on the wall. Entity hits slot into the same function.
-- **Enemies** with simple AI down the corridors.
+- ~~**Enemies** with simple AI down the corridors.~~ ✓ done — imps that chase on line of sight and die in 3 hits.
 - ~~**PWA shell** — a manifest + service worker to make it installable and offline-capable.~~ ✓ done — see [Progressive Web App](#progressive-web-app).
 - **Floor/ceiling texture-casting** for a more DOOM-authentic look (per-pixel; costs perf).
 

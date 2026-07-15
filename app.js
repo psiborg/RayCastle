@@ -28,6 +28,7 @@
   const g_x      = document.getElementById("g-x");
   const g_y      = document.getElementById("g-y");
   const g_dir    = document.getElementById("g-dir");
+  const g_kills  = document.getElementById("g-kills");
   const g_status = document.getElementById("g-status");
 
   // --- Render buffer ---------------------------------------------------------
@@ -166,6 +167,15 @@
         }
       }
     }
+    // enemies: red while alive, dark once dead
+    for (const e of engine.entities) {
+      const alive = e.state !== "dead" && e.state !== "dying";
+      mctx.fillStyle = alive ? "#e03a2a" : "#5a2020";
+      mctx.beginPath();
+      mctx.arc(e.x * cell, e.y * cell, alive ? 2.2 : 1.5, 0, Math.PI * 2);
+      mctx.fill();
+    }
+
     // player + facing
     const px = player.posX * cell, py = player.posY * cell;
     mctx.strokeStyle = "#ffb300"; mctx.lineWidth = 1.5;
@@ -188,6 +198,7 @@
     g_x.textContent = engine.player.posX.toFixed(1);
     g_y.textContent = engine.player.posY.toFixed(1);
     g_dir.textContent = Math.round(engine.facingDegrees()) + "\u00B0";
+    g_kills.textContent = kills + " / " + engine.entities.length;
   }
 
   // --- Shotgun hitscan + impact sparks ---------------------------------------
@@ -196,6 +207,7 @@
   // fraction (dcam+1)/2 — so the spark sits exactly where that pellet hit, and
   // its size scales with the hit distance (near = big, far = small).
   const impacts = [];   // active bursts: { pellets:[{fx,fy,dist}], life }
+  let kills = 0;
 
   function applyHitscan() {
     const p = engine.player;
@@ -205,12 +217,16 @@
       let rx = p.dirX + p.planeX * dcam;
       let ry = p.dirY + p.planeY * dcam;
       const len = Math.hypot(rx, ry); rx /= len; ry /= len;
-      const shot = engine.castRay(p.posX, p.posY, rx, ry, 40);
+      const shot = engine.castRay(p.posX, p.posY, rx, ry, 40, true);
       if (shot.hit) {
+        if (shot.entity) {
+          if (engine.damage(shot.entity, 1)) kills++;     // returns true on a kill
+        }
         pellets.push({
           fx: (dcam + 1) / 2,                            // screen x fraction
           fy: 0.5 + (Math.random() - 0.5) * 0.05,        // near horizon, slight scatter
           dist: shot.dist,
+          gore: !!shot.entity,                           // blood instead of sparks
         });
       }
     }
@@ -230,9 +246,15 @@
         const y = pel.fy * engine.RH;
         const r = Math.max(1.5, (engine.RH / pel.dist) * 0.06) * (0.6 + imp.life);
         const g = sctx.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0.0, "rgba(255,250,230," + imp.life + ")");
-        g.addColorStop(0.5, "rgba(255,180,70," + (imp.life * 0.7) + ")");
-        g.addColorStop(1.0, "rgba(255,120,40,0)");
+        if (pel.gore) {
+          g.addColorStop(0.0, "rgba(255,90,90," + imp.life + ")");
+          g.addColorStop(0.5, "rgba(170,20,20," + (imp.life * 0.8) + ")");
+          g.addColorStop(1.0, "rgba(110,10,10,0)");
+        } else {
+          g.addColorStop(0.0, "rgba(255,250,230," + imp.life + ")");
+          g.addColorStop(0.5, "rgba(255,180,70," + (imp.life * 0.7) + ")");
+          g.addColorStop(1.0, "rgba(255,120,40,0)");
+        }
         sctx.fillStyle = g;
         sctx.beginPath(); sctx.arc(x, y, r, 0, Math.PI * 2); sctx.fill();
       }
