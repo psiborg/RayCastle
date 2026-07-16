@@ -1,6 +1,6 @@
 # RayCastle
 
-> **Doomenstein** — a first-person maze that teaches how Wolfenstein 3D's renderer worked.
+> **Doomenstein** — a first-person maze to learn how Wolfenstein 3D's renderer worked.
 
 A browser-based, first-person maze rendered with a **Wolfenstein 3D-style raycasting engine**, wrapped in a DOOM-flavoured techbase aesthetic: procedurally-textured walls, a live minimap, an amber status-bar HUD, a pump shotgun with synthesized sound, and full touch controls for phones.
 
